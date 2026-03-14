@@ -1,0 +1,9 @@
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "biome-check"
+name = "Biome Check"
+language = "system"
+entry = "biome check --write --no-errors-on-unmatched --error-on-warnings"
+files = "\\.(ts|js|json)$"

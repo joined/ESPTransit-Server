@@ -1,0 +1,12 @@
+name: Lint
+
+on: push
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
+      - run: bun install --frozen-lockfile
+      - run: biome check --no-errors-on-unmatched --files-ignore-unknown=true
