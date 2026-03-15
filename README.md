@@ -46,7 +46,7 @@ All data endpoints return an `X-Cache: HIT` or `MISS` response header.
 
 ## Supported networks
 
-Currently only `bvg` (Berlin) is deployed. The server supports any [hafas-client profile](https://github.com/public-transport/hafas-client/blob/6/p/readme.md) — to add one, duplicate the `bvg` service block in `docker-compose.yml` and change `HAFAS_PROFILE`.
+Currently only `bvg` (Berlin) is deployed at [`bvg.api.esptrans.it`](https://bvg.api.esptrans.it). The server supports any [hafas-client profile](https://github.com/public-transport/hafas-client/blob/6/p/readme.md) — to add one, duplicate the `bvg` service block in `docker-compose.yml` and change `HAFAS_PROFILE`.
 
 ## Running
 
