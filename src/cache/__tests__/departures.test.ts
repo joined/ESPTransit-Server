@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { Alternative } from "hafas-client";
+import type { Redis } from "ioredis";
 import {
     buildKey,
     getTTL,
@@ -77,7 +78,7 @@ describe("readDeparturesCache", () => {
         ];
         const fakeRedis = {
             get: mock(() => Promise.resolve(JSON.stringify(departures))),
-        } as any;
+        } as unknown as Redis;
 
         const result = await readDeparturesCache(
             fakeRedis,
@@ -87,14 +88,14 @@ describe("readDeparturesCache", () => {
             10,
             {},
         );
-        expect(result).toEqual(departures as any);
+        expect(result).toEqual(departures as unknown as Alternative[]);
         expect(fakeRedis.get).toHaveBeenCalledTimes(1);
     });
 
     test("returns null on cache miss", async () => {
         const fakeRedis = {
             get: mock(() => Promise.resolve(null)),
-        } as any;
+        } as unknown as Redis;
 
         const result = await readDeparturesCache(
             fakeRedis,
@@ -110,7 +111,7 @@ describe("readDeparturesCache", () => {
     test("returns null on Redis error", async () => {
         const fakeRedis = {
             get: mock(() => Promise.reject(new Error("connection refused"))),
-        } as any;
+        } as unknown as Redis;
 
         const result = await readDeparturesCache(
             fakeRedis,
@@ -128,7 +129,7 @@ describe("writeDeparturesCache", () => {
     test("writes with PX TTL", async () => {
         const fakeRedis = {
             set: mock(() => Promise.resolve("OK")),
-        } as any;
+        } as unknown as Redis;
 
         const departures = [
             { when: new Date(Date.now() + 900_000).toISOString() },
@@ -154,7 +155,7 @@ describe("writeDeparturesCache", () => {
     test("gracefully handles Redis error", async () => {
         const fakeRedis = {
             set: mock(() => Promise.reject(new Error("connection refused"))),
-        } as any;
+        } as unknown as Redis;
 
         // Should not throw
         await writeDeparturesCache(
