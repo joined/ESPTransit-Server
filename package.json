@@ -25,7 +25,7 @@
         "@opentelemetry/sdk-node": "^0.213.0",
         "@opentelemetry/semantic-conventions": "^1.40.0",
         "@scalar/fastify-api-reference": "^1.46.0",
-        "@scalar/openapi-to-markdown": "^0.3.53",
+        "@scalar/openapi-to-markdown": "^0.4.7",
         "fastify": "^5",
         "hafas-client": "^6",
         "ioredis": "^5"
