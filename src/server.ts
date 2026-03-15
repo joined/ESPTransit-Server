@@ -2,6 +2,7 @@ import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import scalarReference from "@scalar/fastify-api-reference";
+import { createMarkdownFromOpenApi } from "@scalar/openapi-to-markdown";
 import Fastify from "fastify";
 import type { HafasClient } from "hafas-client";
 import type Redis from "ioredis";
@@ -54,7 +55,6 @@ export async function createServer(
         "/",
         {
             schema: { hide: true },
-            produces: ["text/html"],
         },
         async (_request, reply) => {
             reply.type("text/html").send(`<!DOCTYPE html>
@@ -82,6 +82,18 @@ export async function createServer(
     </ul>
 </body>
 </html>`);
+        },
+    );
+
+    app.get(
+        "/llms.txt",
+        { schema: { hide: true } },
+        async (_request, reply) => {
+            const spec = app.swagger();
+            const markdown = await createMarkdownFromOpenApi(
+                JSON.parse(JSON.stringify(spec)),
+            );
+            return reply.type("text/plain; charset=utf-8").send(markdown);
         },
     );
 
