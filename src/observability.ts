@@ -1,6 +1,5 @@
 import type { Span } from "@opentelemetry/api";
 import {
-    metrics,
     propagation,
     ROOT_CONTEXT,
     SpanKind,
@@ -9,11 +8,9 @@ import {
 } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
     ATTR_SERVICE_NAME,
@@ -45,9 +42,9 @@ const noopHistogram: HistogramLike = {
     record: () => {},
 };
 
-let httpRequestsTotal: CounterLike = noopCounter;
-let httpRequestDurationMs: HistogramLike = noopHistogram;
-let cacheLookupsTotal: CounterLike = noopCounter;
+const httpRequestsTotal: CounterLike = noopCounter;
+const httpRequestDurationMs: HistogramLike = noopHistogram;
+const cacheLookupsTotal: CounterLike = noopCounter;
 
 const requestStarts = new WeakMap<FastifyRequest, bigint>();
 const requestSpans = new WeakMap<FastifyRequest, Span>();
@@ -143,16 +140,12 @@ function toMilliseconds(start: bigint): number {
     return Number(process.hrtime.bigint() - start) / 1_000_000;
 }
 
-function buildSignalUrl(
-    endpoint: string,
-    signal: "traces" | "metrics" | "logs",
-): string {
+function buildSignalUrl(endpoint: string, signal: "traces" | "logs"): string {
     const normalized = endpoint.endsWith("/")
         ? endpoint.slice(0, -1)
         : endpoint;
     const withoutSignalPath = normalized
         .replace(/\/v1\/traces$/, "")
-        .replace(/\/v1\/metrics$/, "")
         .replace(/\/v1\/logs$/, "");
     return `${withoutSignalPath}/v1/${signal}`;
 }
@@ -180,26 +173,6 @@ function parseOtlpHeaders(raw?: string): Record<string, string> {
     }
 
     return headers;
-}
-
-function initializeMetricInstruments(): void {
-    const meter = metrics.getMeter("esptransit-server", SERVICE_VERSION);
-
-    httpRequestsTotal = meter.createCounter("esptransit_http_requests_total", {
-        description: "Total HTTP requests handled by the ESPTransit server.",
-    });
-
-    httpRequestDurationMs = meter.createHistogram(
-        "esptransit_http_request_duration_ms",
-        {
-            description: "HTTP request duration in milliseconds.",
-            unit: "ms",
-        },
-    );
-
-    cacheLookupsTotal = meter.createCounter("esptransit_cache_lookups_total", {
-        description: "Cache lookup outcomes per route.",
-    });
 }
 
 export function startObservability(
@@ -234,22 +207,12 @@ export function startObservability(
         headers,
         timeoutMillis: config.exportTimeoutMs,
     });
-    const metricExporter = new OTLPMetricExporter({
-        url: buildSignalUrl(endpoint, "metrics"),
-        headers,
-        timeoutMillis: config.exportTimeoutMs,
-    });
     const logExporter = new OTLPLogExporter({
         url: buildSignalUrl(endpoint, "logs"),
         headers,
         timeoutMillis: config.exportTimeoutMs,
     });
     const logRecordProcessor = new BatchLogRecordProcessor(logExporter);
-    const metricReader = new PeriodicExportingMetricReader({
-        exporter: metricExporter,
-        exportIntervalMillis: config.exportIntervalMs,
-        exportTimeoutMillis: config.exportTimeoutMs,
-    });
 
     const resourceAttributes: Record<string, string> = {
         [ATTR_SERVICE_NAME]: config.serviceName,
@@ -264,13 +227,11 @@ export function startObservability(
     const sdk = new NodeSDK({
         resource: resourceFromAttributes(resourceAttributes),
         traceExporter,
-        metricReaders: [metricReader],
         logRecordProcessors: [logRecordProcessor],
     });
 
     try {
         sdk.start();
-        initializeMetricInstruments();
         logInfo(`[otel] enabled endpoint=${endpoint} logs=enabled`);
         return {
             enabled: true,
